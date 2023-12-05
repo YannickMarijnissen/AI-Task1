@@ -1,58 +1,58 @@
-import pandas as pd
 import streamlit as st
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import LabelEncoder
+import itertools
 
-# Load the dataset with space as the delimiter
-file_path = 'rocket_league_skillshots.data'
-df = pd.read_csv(file_path, delimiter=' ', header=None)
+# Function to solve a cryptarithmetic puzzle
+def solve_cryptarithmetic(word1, word2, result):
+    # Create a set of unique characters in all words
+    unique_chars = set(word1 + word2 + result)
+    
+    # Check if there are more than 10 unique characters (0-9 digits)
+    if len(unique_chars) > 10:
+        st.error("Invalid input: More than 10 unique characters")
+        return
 
-# Display the data
-st.dataframe(df)
+    # Convert unique characters to a list and create a range of digits (0-9)
+    chars = list(unique_chars)
+    digits = range(10)
+    
+    # Iterate through all permutations of digits for unique characters
+    for perm in itertools.permutations(digits, len(unique_chars)):
+        char_to_digit = {char: digit for char, digit in zip(chars, perm)}
+        
+        # Check if leading zeros are assigned to the words
+        if char_to_digit[word1[0]] == 0 or char_to_digit[word2[0]] == 0 or char_to_digit[result[0]] == 0:
+            continue
 
-# Button to calculate accuracy
-if st.button('Calculate Accuracy'):
-    # Check if the dataset has numeric values
-    if df.applymap(lambda x: pd.to_numeric(x, errors='coerce')).notna().all().all():
-        # If numeric, split the data
-        X = df.iloc[:, :-1]
-        y = df.iloc[:, -1]
+        # Convert words to numbers using the character-to-digit mapping
+        num1 = int(''.join(str(char_to_digit[char]) for char in word1))
+        num2 = int(''.join(str(char_to_digit[char]) for char in word2))
+        res = int(''.join(str(char_to_digit[char]) for char in result))
 
-        # Split the data into a training set and a test set
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        # Check if the addition of num1 and num2 equals res
+        if num1 + num2 == res:
+            num_mapping = {char: char_to_digit[char] for char in chars}
+            # Display the solution with numbers and the number correspondence in the Streamlit app
+            st.success(f"Solution found: {word1} + {word2} = {result} ({num1} + {num2} = {res})")
+            st.write("Number Correspondence:")
+            for char, digit in num_mapping.items():
+                st.write(f"{char} = {digit}")
+            return
 
-        # Create and train a RandomForestClassifier
-        random_forest_model = RandomForestClassifier(random_state=42)
-        random_forest_model.fit(X_train, y_train)
+    # If no solution is found, display a message in the Streamlit app
+    st.warning("No solution found")
 
-        # Make predictions on the test data
-        y_pred_rf = random_forest_model.predict(X_test)
+if __name__ == "__main__":
+    # Streamlit app
+    st.title("Cryptarithmetic Puzzle Solver")
 
-        # Calculate the accuracy of the RandomForest model
-        accuracy_rf = accuracy_score(y_test, y_pred_rf)
-
-        # Display the model accuracy
-        st.write("Random Forest Model Accuracy:", accuracy_rf)
+    # Get user input for the cryptarithmetic puzzle
+    puzzle = st.text_input("Enter the cryptarithmetic puzzle (e.g., 'TO + GO = OUT'):")
+    parts = puzzle.split()
+    
+    # Check if the input format is valid
+    if len(parts) != 5 or parts[1] != '+' or parts[3] != '=':
+        st.error("Invalid input format. Please use the format 'WORD1 + WORD2 = RESULT'.")
     else:
-        # If not numeric, encode categorical variables
-        label_encoder = LabelEncoder()
-        df_encoded = df.apply(lambda col: label_encoder.fit_transform(col.astype(str)))
-
-        # Split the data into a training set and a test set
-        X_train, X_test, y_train, y_test = train_test_split(df_encoded.iloc[:, :-1], df_encoded.iloc[:, -1], test_size=0.2, random_state=42)
-
-        # Create and train a RandomForestClassifier
-        random_forest_model = RandomForestClassifier(random_state=42)
-        random_forest_model.fit(X_train, y_train)
-
-        # Make predictions on the test data
-        y_pred_rf = random_forest_model.predict(X_test)
-
-        # Calculate the accuracy of the RandomForest model
-        accuracy_rf = accuracy_score(y_test, y_pred_rf)
-
-        # Display the model accuracy
-        st.write("Random Forest Model Accuracy:", accuracy_rf)
+        word1, word2, result = parts[0], parts[2], parts[4]
+        # Call the solve_cryptarithmetic function to solve the puzzle
+        solve_cryptarithmetic(word1, word2, result)
